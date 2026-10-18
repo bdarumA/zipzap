@@ -16,11 +16,21 @@ function validLineUrl(value) {
 }
 const validLineId = id => !id || /^@[a-zA-Z0-9._-]{2,40}$/.test(id);
 const derivedUrl = id => `https://line.me/R/ti/p/${id}`;
+function sanitizeAdjust(input) {
+  const out = {};
+  for(const k of ['brand','hero','gallery']) {
+    const v = input && typeof input === 'object' ? input[k] : null;
+    const clamp = (n,min,max,def) => typeof n === 'number' && Number.isFinite(n) ? Math.min(max,Math.max(min,n)) : def;
+    out[k] = {x:clamp(v?.x,-100,100,0),y:clamp(v?.y,-100,100,0),zoom:clamp(v?.zoom,50,250,100)};
+  }
+  return out;
+}
 const sanitizeProfile = (p = {}) => ({
   brandName: validBrandName(p.brandName) ? p.brandName : DEFAULT_BRAND_NAME,
   brandImage: validImage(p.brandImage, 130000) ? p.brandImage : '',
   heroImage: validImage(p.heroImage, 220000) ? p.heroImage : '',
-  galleryImage: validImage(p.galleryImage, 220000) ? p.galleryImage : ''
+  galleryImage: validImage(p.galleryImage, 220000) ? p.galleryImage : '',
+  imageAdjust: sanitizeAdjust(p.imageAdjust)
 });
 async function getGlobals(env) {
   const [pixelId, lineId, storedLineUrl, activeTipsterSlug, profilesIndex] = await Promise.all([
@@ -42,7 +52,7 @@ async function getGlobals(env) {
 }
 async function getProfile(env, slug) {
   const raw = await env.SIANKAI_SETTINGS.get(profileKey(slug), 'json');
-  if (!raw) return { brandName: DEFAULT_BRAND_NAME, brandImage: '', heroImage: '', galleryImage: '' };
+  if (!raw) return { brandName: DEFAULT_BRAND_NAME, brandImage: '', heroImage: '', galleryImage: '', imageAdjust: sanitizeAdjust(null) };
   return sanitizeProfile(raw);
 }
 export async function onRequestGet({ request, env }) {
@@ -65,6 +75,7 @@ export async function onRequestGet({ request, env }) {
     brandImage: profile.brandImage,
     heroImage: profile.heroImage,
     galleryImage: profile.galleryImage,
+    imageAdjust: profile.imageAdjust,
     ...(admin ? { profiles: globals.profiles, profile } : {})
   });
 }
@@ -99,6 +110,7 @@ export async function onRequestPut({ request, env }) {
   const heroImage = typeof body.heroImage === 'string' ? body.heroImage : '';
   const galleryImage = typeof body.galleryImage === 'string' ? body.galleryImage : '';
   const makeActive = !!body.makeActive;
+  const imageAdjust = sanitizeAdjust(body.imageAdjust);
 
   if (pixelId && !/^\d{10,20}$/.test(pixelId)) return response({ error: 'Pixel ID must be 10–20 digits' }, 400);
   if (!validLineId(lineId)) return response({ error: 'LINE OA ID must begin with @ and contain 2–40 letters, numbers, dots, underscores or hyphens' }, 400);
@@ -116,7 +128,7 @@ export async function onRequestPut({ request, env }) {
     env.SIANKAI_SETTINGS.put('line_oa_id', lineId),
     env.SIANKAI_SETTINGS.put('line_oa_url', lineUrl),
     env.SIANKAI_SETTINGS.put('tipster_profiles_index', JSON.stringify(nextProfiles)),
-    env.SIANKAI_SETTINGS.put(profileKey(profileSlug), JSON.stringify({ brandName, brandImage, heroImage, galleryImage })),
+    env.SIANKAI_SETTINGS.put(profileKey(profileSlug), JSON.stringify({ brandName, brandImage, heroImage, galleryImage, imageAdjust })),
     makeActive ? env.SIANKAI_SETTINGS.put('active_tipster_slug', profileSlug) : Promise.resolve()
   ]);
   return response({ ok: true, profileSlug, activeTipsterSlug: makeActive ? profileSlug : globals.activeTipsterSlug || profileSlug, profiles: nextProfiles });
