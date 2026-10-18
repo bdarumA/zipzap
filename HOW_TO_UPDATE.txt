@@ -1,0 +1,14 @@
+SIANKAI V11 Image Controls — 3-file patch
+
+Root: bdarumA/zipzap
+Branch: fix/v11-image-controls (create newer test branch from main if already merged)
+Replace these exact 3 files:
+- public/admin.html
+- public/index.html
+- functions/api/pixel-config.js
+
+Do not upload HOW_TO_UPDATE.txt to the website unless wanted.
+Open public/admin.html in GitHub and search imageAdjustControls to verify correct file.
+Check GitHub PR files changed = these 3 files, preview Deploy, test controls and persistence, then merge if passed.
+Changing Admin display alone does not implement storage; pixel-config.js and index.html are required.
+Never put Admin Token in repo.
