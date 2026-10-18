@@ -17,7 +17,7 @@
     const name=String(config.brandName||'เซียนไก่').trim();
     if(name&&name.length<=60){
       d.querySelectorAll('[data-brand-name]').forEach(el=>el.textContent=name);
-      d.title='SIANKAI | '+name+' | วิเคราะห์ฟุตบอลด้วยข้อมูล';
+      d.title='บทวิเคราะของเซียน | '+name+' | วิเคราะห์ฟุตบอลด้วยข้อมูล';
       const icon=d.getElementById('brandIcon');
       const picture=String(config.brandImage||'');
       if(/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(picture)&&picture.length<=130000){const im=d.createElement('img');im.src=picture;im.alt=name+' โลโก้';icon.replaceChildren(im)}else icon.textContent=(name[0]||'S').toUpperCase();
